@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Painel de Resultados | Reinaldo</title>
+  <style>
+    :root {
+      --bg: #F7F8FA;
+      --surface: #FFFFFF;
+      --text: #1D2430;
+      --muted: #637083;
+      --line: #D8DEE8;
+      --teal: #0F766E;
+      --indigo: #4F46E5;
+      --amber: #B7791F;
+      --rose: #C2415B;
+      --green-soft: #E6F4F1;
+      --indigo-soft: #ECEBFF;
+      --amber-soft: #FFF4D8;
+      --rose-soft: #FCE7EC;
+      --shadow: 0 12px 30px rgba(29, 36, 48, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      letter-spacing: 0;
+    }
+
+    .shell {
+      width: min(1280px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 44px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 20px;
+      align-items: end;
+      padding: 4px 0 22px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+      line-height: 1.12;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+      max-width: 760px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin: 18px 0;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .kpi {
+      min-height: 116px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-top: 4px solid var(--teal);
+    }
+
+    .kpi:nth-child(2) { border-top-color: var(--indigo); }
+    .kpi:nth-child(3) { border-top-color: var(--amber); }
+    .kpi:nth-child(4) { border-top-color: var(--rose); }
+
+    .kpi-label {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .kpi-value {
+      margin-top: 12px;
+      font-size: 26px;
+      line-height: 1.05;
+      font-weight: 700;
+    }
+
+    .kpi-note {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.25fr 0.75fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .panel {
+      padding: 16px;
+      min-width: 0;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.25;
+    }
+
+    .hint {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .segmented {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: flex-end;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #F9FAFB;
+      color: var(--text);
+      padding: 8px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    button.active {
+      border-color: var(--teal);
+      background: var(--green-soft);
+      color: #0B4F49;
+      font-weight: 700;
+    }
+
+    .chart-wrap {
+      position: relative;
+      width: 100%;
+      height: 310px;
+    }
+
+    .chart-wrap.tall { height: 370px; }
+    canvas { width: 100%; height: 100%; display: block; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    th, td {
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--line);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    th:first-child, td:first-child {
+      text-align: left;
+      white-space: normal;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 4px 7px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      background: var(--indigo-soft);
+      color: #3730A3;
+    }
+
+    .note-band {
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-left: 4px solid var(--amber);
+      background: var(--amber-soft);
+      color: #5D4214;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    @media (max-width: 980px) {
+      header, .grid, .two-col { grid-template-columns: 1fr; }
+      .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .panel-head { flex-direction: column; }
+      .segmented { justify-content: flex-start; }
+    }
+
+    @media (max-width: 620px) {
+      .shell { width: min(100% - 20px, 1280px); padding-top: 18px; }
+      .kpis { grid-template-columns: 1fr; }
+      h1 { font-size: 24px; }
+      .chart-wrap, .chart-wrap.tall { height: 280px; }
+      th, td { padding: 8px 6px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div>
+        <h1>Painel de resultados da modelagem</h1>
+        <p class="subtitle">Comparativo de modelos de previsao de demanda, validacao temporal, teste final e reflexos no dimensionamento de estoque.</p>
+      </div>
+      <div class="badge" id="periodBadge"></div>
+    </header>
+
+    <section class="kpis">
+      <article class="card kpi">
+        <div class="kpi-label">Melhor validacao</div>
+        <div>
+          <div class="kpi-value" id="bestValidation"></div>
+          <div class="kpi-note" id="bestValidationNote"></div>
+        </div>
+      </article>
+      <article class="card kpi">
+        <div class="kpi-label">Melhor teste final</div>
+        <div>
+          <div class="kpi-value" id="bestTest"></div>
+          <div class="kpi-note" id="bestTestNote"></div>
+        </div>
+      </article>
+      <article class="card kpi">
+        <div class="kpi-label">Demanda mensal media</div>
+        <div>
+          <div class="kpi-value" id="avgDemand"></div>
+          <div class="kpi-note">Toneladas no periodo agregado</div>
+        </div>
+      </article>
+      <article class="card kpi">
+        <div class="kpi-label">Estoque necessario final</div>
+        <div>
+          <div class="kpi-value" id="latestStockNeed"></div>
+          <div class="kpi-note" id="latestStockGap"></div>
+        </div>
+      </article>
+    </section>
+
+    <section class="grid">
+      <article class="card panel">
+        <div class="panel-head">
+          <div>
+            <h2>Serie mensal de demanda</h2>
+            <p class="hint">Volume expedido total em toneladas, agregado da base diaria.</p>
+          </div>
+        </div>
+        <div class="chart-wrap tall"><canvas id="monthlyChart"></canvas></div>
+      </article>
+
+      <article class="card panel">
+        <div class="panel-head">
+          <div>
+            <h2>Ranking por WMAPE</h2>
+            <p class="hint">Quanto menor, melhor. A validacao escolhe o modelo; o teste final mede robustez.</p>
+          </div>
+        </div>
+        <div class="chart-wrap tall"><canvas id="wmapeChart"></canvas></div>
+      </article>
+    </section>
+
+    <section class="card panel" style="margin-top: 14px;">
+      <div class="panel-head">
+        <div>
+          <h2>Previsao no teste final</h2>
+          <p class="hint">Selecione o modelo para comparar a previsao contra a demanda observada nos ultimos 12 meses.</p>
+        </div>
+        <div class="segmented" id="modelButtons"></div>
+      </div>
+      <div class="chart-wrap tall"><canvas id="forecastChart"></canvas></div>
+    </section>
+
+    <section class="two-col">
+      <article class="card panel">
+        <div class="panel-head">
+          <div>
+            <h2>Metricas do teste final</h2>
+            <p class="hint">Tabela pronta para leitura rapida dos modelos comparados.</p>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table id="metricsTable"></table>
+        </div>
+      </article>
+
+      <article class="card panel">
+        <div class="panel-head">
+          <div>
+            <h2>Dimensionamento de estoque</h2>
+            <p class="hint">Estoque necessario calculado com previsao, erro validado e nivel de servico.</p>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="stockChart"></canvas></div>
+      </article>
+    </section>
+
+    <section class="note-band">
+      Leitura metodologica: os resultados confirmam que a previsao deve ser apresentada com cautela. A diferenca entre o melhor modelo na validacao e o melhor no teste final reforca a recomendacao de posicionar a tese como framework gerencial de apoio a decisao, nao como demonstracao de acuracia perfeita ou otimizacao matematica.
+    </section>
+  </main>
+
+  <script>
+    const DATA = {"summary": {"months": 60, "period_start": "2021-01-01", "period_end": "2025-12-01", "best_validation_model": "naive_sazonal_12m", "best_validation_wmape": "13.4%", "best_test_model": "media_movel_3m", "best_test_wmape": "20.6%", "average_monthly_demand": "9.273", "latest_month_demand": "21.819", "latest_stock_need": "18.168", "latest_stock_gap": "-17.334"}, "monthly": [{"data": "2021-01-01", "vol_total": 5529.732527369601, "estoque_total_medio": 193.7493686328224, "cobertura_observada_meses": 0.0350377468844746}, {"data": "2021-02-01", "vol_total": 7565.714689468, "estoque_total_medio": 316.2399523797829, "cobertura_observada_meses": 0.0417990851307161}, {"data": "2021-03-01", "vol_total": 5785.83728936, "estoque_total_medio": 239.95530182556905, "cobertura_observada_meses": 0.0414728741623689}, {"data": "2021-04-01", "vol_total": 4244.508312816, "estoque_total_medio": 181.25076720967112, "cobertura_observada_meses": 0.0427024177717821}, {"data": "2021-05-01", "vol_total": 6473.328376, "estoque_total_medio": 262.92694843406457, "cobertura_observada_meses": 0.0406169644365442}, {"data": "2021-06-01", "vol_total": 10787.3386777, "estoque_total_medio": 508.7127174191111, "cobertura_observada_meses": 0.0471583151895232}, {"data": "2021-07-01", "vol_total": 9045.861555, "estoque_total_medio": 409.70819978279576, "cobertura_observada_meses": 0.0452923358700238}, {"data": "2021-08-01", "vol_total": 8993.057585, "estoque_total_medio": 358.98337459182795, "cobertura_observada_meses": 0.0399178334174792}, {"data": "2021-09-01", "vol_total": 7533.92576, "estoque_total_medio": 313.46812814200007, "cobertura_observada_meses": 0.0416075414236627}, {"data": "2021-10-01", "vol_total": 5531.52261, "estoque_total_medio": 228.37611616129035, "cobertura_observada_meses": 0.0412863025721755}, {"data": "2021-11-01", "vol_total": 6729.455793000001, "estoque_total_medio": 291.458819994, "cobertura_observada_meses": 0.043310904917033}, {"data": "2021-12-01", "vol_total": 11958.08508, "estoque_total_medio": 500.8387728, "cobertura_observada_meses": 0.0418828574516213}, {"data": "2022-01-01", "vol_total": 6964.830237000001, "estoque_total_medio": 278.40470234322584, "cobertura_observada_meses": 0.0399729344247656}, {"data": "2022-02-01", "vol_total": 9995.6328543, "estoque_total_medio": 426.7431469157142, "cobertura_observada_meses": 0.0426929593289467}, {"data": "2022-03-01", "vol_total": 6894.9918, "estoque_total_medio": 284.776212716129, "cobertura_observada_meses": 0.0413018928776868}, {"data": "2022-04-01", "vol_total": 4212.9189021600005, "estoque_total_medio": 169.08291541333335, "cobertura_observada_meses": 0.0401343864764743}, {"data": "2022-05-01", "vol_total": 10822.8257676, "estoque_total_medio": 430.32309068903226, "cobertura_observada_meses": 0.0397606965065702}, {"data": "2022-06-01", "vol_total": 13905.268896, "estoque_total_medio": 593.090563488, "cobertura_observada_meses": 0.0426522182292072}, {"data": "2022-07-01", "vol_total": 6630.33488, "estoque_total_medio": 263.741210116129, "cobertura_observada_meses": 0.0397779621828285}, {"data": "2022-08-01", "vol_total": 7565.26688, "estoque_total_medio": 302.4411717849462, "cobertura_observada_meses": 0.0399775945227389}, {"data": "2022-09-01", "vol_total": 6665.96556, "estoque_total_medio": 304.0397423333333, "cobertura_observada_meses": 0.0456107580509811}, {"data": "2022-10-01", "vol_total": 6653.01861, "estoque_total_medio": 269.02373318279564, "cobertura_observada_meses": 0.040436341599651}, {"data": "2022-11-01", "vol_total": 7884.932778, "estoque_total_medio": 329.3633254888889, "cobertura_observada_meses": 0.0417712280829908}, {"data": "2022-12-01", "vol_total": 13058.46878, "estoque_total_medio": 520.3154543225806, "cobertura_observada_meses": 0.0398450586426704}, {"data": "2023-01-01", "vol_total": 9157.274784, "estoque_total_medio": 370.288757548387, "cobertura_observada_meses": 0.0404365672410936}, {"data": "2023-02-01", "vol_total": 10410.241512, "estoque_total_medio": 463.6569143642856, "cobertura_observada_meses": 0.0445385358091666}, {"data": "2023-03-01", "vol_total": 10134.6833, "estoque_total_medio": 383.6446362752689, "cobertura_observada_meses": 0.0378546250453893}, {"data": "2023-04-01", "vol_total": 7336.864164, "estoque_total_medio": 300.07139240711103, "cobertura_observada_meses": 0.0408991342485908}, {"data": "2023-05-01", "vol_total": 9702.08736, "estoque_total_medio": 383.9677628567742, "cobertura_observada_meses": 0.0395757890657432}, {"data": "2023-06-01", "vol_total": 8848.029032808, "estoque_total_medio": 359.26850054044445, "cobertura_observada_meses": 0.0406043537163244}, {"data": "2023-07-01", "vol_total": 8376.351076968, "estoque_total_medio": 335.0430124172042, "cobertura_observada_meses": 0.0399986831185304}, {"data": "2023-08-01", "vol_total": 8667.101141719999, "estoque_total_medio": 391.8156615784946, "cobertura_observada_meses": 0.0452072330957866}, {"data": "2023-09-01", "vol_total": 8105.744572631999, "estoque_total_medio": 369.3975948444444, "cobertura_observada_meses": 0.0455723211525401}, {"data": "2023-10-01", "vol_total": 8531.400163999999, "estoque_total_medio": 345.7911771156989, "cobertura_observada_meses": 0.0405315857266707}, {"data": "2023-11-01", "vol_total": 8597.63219, "estoque_total_medio": 348.66079779999995, "cobertura_observada_meses": 0.0405531185906662}, {"data": "2023-12-01", "vol_total": 11681.34548, "estoque_total_medio": 500.4125471827957, "cobertura_observada_meses": 0.0428386051965989}, {"data": "2024-01-01", "vol_total": 7645.920188000001, "estoque_total_medio": 332.2217227711828, "cobertura_observada_meses": 0.0434508488975065}, {"data": "2024-02-01", "vol_total": 14038.333122, "estoque_total_medio": 519.4421346887357, "cobertura_observada_meses": 0.0370016960115227}, {"data": "2024-03-01", "vol_total": 7199.66166, "estoque_total_medio": 273.86623576774195, "cobertura_observada_meses": 0.0380387646949151}, {"data": "2024-04-01", "vol_total": 6330.022176, "estoque_total_medio": 291.4477758293333, "cobertura_observada_meses": 0.0460421413584212}, {"data": "2024-05-01", "vol_total": 9232.230816, "estoque_total_medio": 385.4031562941936, "cobertura_observada_meses": 0.0417453986989002}, {"data": "2024-06-01", "vol_total": 9443.547516, "estoque_total_medio": 355.25395987466663, "cobertura_observada_meses": 0.0376186977693252}, {"data": "2024-07-01", "vol_total": 8986.132692, "estoque_total_medio": 379.8464455612903, "cobertura_observada_meses": 0.0422702911898299}, {"data": "2024-08-01", "vol_total": 8384.83932, "estoque_total_medio": 351.3060563096774, "cobertura_observada_meses": 0.0418977684487909}, {"data": "2024-09-01", "vol_total": 8001.6394056, "estoque_total_medio": 323.99889722666666, "cobertura_observada_meses": 0.0404915643911563}, {"data": "2024-10-01", "vol_total": 8603.438699999999, "estoque_total_medio": 337.2485340645161, "cobertura_observada_meses": 0.0391992720381114}, {"data": "2024-11-01", "vol_total": 8978.66667, "estoque_total_medio": 363.487862656, "cobertura_observada_meses": 0.0404835011717836}, {"data": "2024-12-01", "vol_total": 15118.2972, "estoque_total_medio": 617.3560013935484, "cobertura_observada_meses": 0.0408350221738959}, {"data": "2025-01-01", "vol_total": 9722.313552, "estoque_total_medio": 405.1549125032258, "cobertura_observada_meses": 0.0416726852447461}, {"data": "2025-02-01", "vol_total": 14073.526841, "estoque_total_medio": 612.7590601545238, "cobertura_observada_meses": 0.0435398366789901}, {"data": "2025-03-01", "vol_total": 8492.68584, "estoque_total_medio": 367.0733567408602, "cobertura_observada_meses": 0.0432222931186231}, {"data": "2025-04-01", "vol_total": 6933.413439999999, "estoque_total_medio": 283.15444423822225, "cobertura_observada_meses": 0.0408391114547789}, {"data": "2025-05-01", "vol_total": 11109.4945158, "estoque_total_medio": 441.262365316129, "cobertura_observada_meses": 0.0397193917948798}, {"data": "2025-06-01", "vol_total": 11203.785613, "estoque_total_medio": 485.6824930401111, "cobertura_observada_meses": 0.0433498560055061}, {"data": "2025-07-01", "vol_total": 11190.2652425, "estoque_total_medio": 439.1659031290322, "cobertura_observada_meses": 0.039245352421237}, {"data": "2025-08-01", "vol_total": 10330.511575, "estoque_total_medio": 391.7837784774193, "cobertura_observada_meses": 0.0379249154926211}, {"data": "2025-09-01", "vol_total": 10566.643395, "estoque_total_medio": 427.44511439, "cobertura_observada_meses": 0.04045230811823}, {"data": "2025-10-01", "vol_total": 14511.8985, "estoque_total_medio": 581.7067683096774, "cobertura_observada_meses": 0.0400848151129004}, {"data": "2025-11-01", "vol_total": 13502.550258, "estoque_total_medio": 546.657037996, "cobertura_observada_meses": 0.0404854658972379}, {"data": "2025-12-01", "vol_total": 21819.01104, "estoque_total_medio": 834.9433624258065, "cobertura_observada_meses": 0.0382667830771585}], "validationMetrics": [{"modelo": "naive_sazonal_12m", "n_obs": 12, "MAE": 1252.7381834146663, "RMSE": 1781.2937453879094, "WMAPE": 0.1342666284818893, "BIAS_PCT": -0.0215605201748291}, {"modelo": "suav_exp_simples", "n_obs": 12, "MAE": 1769.7473172203972, "RMSE": 2667.6837841772804, "WMAPE": 0.1896789039353468, "BIAS_PCT": -0.0352597082141995}, {"modelo": "holt_tendencia", "n_obs": 12, "MAE": 2010.718809333266, "RMSE": 2963.2319753222832, "WMAPE": 0.2155058725985471, "BIAS_PCT": -0.0362425404451169}, {"modelo": "media_movel_3m", "n_obs": 12, "MAE": 2134.5864014, "RMSE": 2912.4349079512804, "WMAPE": 0.2287818181912945, "BIAS_PCT": -0.0331805733008805}, {"modelo": "naive_ultimo_mes", "n_obs": 12, "MAE": 2484.020034733333, "RMSE": 3559.663092919507, "WMAPE": 0.2662335989759738, "BIAS_PCT": -0.0306972841445061}, {"modelo": "drift_linear", "n_obs": 12, "MAE": 2510.894469782747, "RMSE": 3595.30284623032, "WMAPE": 0.269113961236989, "BIAS_PCT": -0.0211838787352657}], "testMetrics": [{"modelo": "media_movel_3m", "n_obs": 12, "MAE": 2463.724652358334, "RMSE": 3793.454273710188, "WMAPE": 0.2060888025464436, "BIAS_PCT": -0.0882115821415564}, {"modelo": "naive_sazonal_12m", "n_obs": 12, "MAE": 2624.447528891667, "RMSE": 3271.967678699129, "WMAPE": 0.2195331560519655, "BIAS_PCT": -0.2195331560519655}, {"modelo": "suav_exp_simples", "n_obs": 12, "MAE": 2898.288621363404, "RMSE": 4269.374451808898, "WMAPE": 0.2424397673007058, "BIAS_PCT": -0.1860951082829642}, {"modelo": "holt_tendencia", "n_obs": 12, "MAE": 3595.70976521563, "RMSE": 3857.6396098538817, "WMAPE": 0.3007785464615565, "BIAS_PCT": 0.2151025676140568}, {"modelo": "naive_ultimo_mes", "n_obs": 12, "MAE": 4280.407855641666, "RMSE": 4825.634109945103, "WMAPE": 0.3580530513160929, "BIAS_PCT": 0.2646347324189904}, {"modelo": "drift_linear", "n_obs": 12, "MAE": 5198.461920042449, "RMSE": 5547.212663173423, "WMAPE": 0.4348476162542428, "BIAS_PCT": 0.3755602151074292}], "testForecasts": [{"data": "2025-01-01", "modelo": "naive_ultimo_mes", "real": 9722.313552, "previsto": 15118.2972}, {"data": "2025-02-01", "modelo": "naive_ultimo_mes", "real": 14073.526841, "previsto": 15118.2972}, {"data": "2025-03-01", "modelo": "naive_ultimo_mes", "real": 8492.68584, "previsto": 15118.2972}, {"data": "2025-04-01", "modelo": "naive_ultimo_mes", "real": 6933.413439999999, "previsto": 15118.2972}, {"data": "2025-05-01", "modelo": "naive_ultimo_mes", "real": 11109.4945158, "previsto": 15118.2972}, {"data": "2025-06-01", "modelo": "naive_ultimo_mes", "real": 11203.785613, "previsto": 15118.2972}, {"data": "2025-07-01", "modelo": "naive_ultimo_mes", "real": 11190.2652425, "previsto": 15118.2972}, {"data": "2025-08-01", "modelo": "naive_ultimo_mes", "real": 10330.511575, "previsto": 15118.2972}, {"data": "2025-09-01", "modelo": "naive_ultimo_mes", "real": 10566.643395, "previsto": 15118.2972}, {"data": "2025-10-01", "modelo": "naive_ultimo_mes", "real": 14511.8985, "previsto": 15118.2972}, {"data": "2025-11-01", "modelo": "naive_ultimo_mes", "real": 13502.550258, "previsto": 15118.2972}, {"data": "2025-12-01", "modelo": "naive_ultimo_mes", "real": 21819.01104, "previsto": 15118.2972}, {"data": "2025-01-01", "modelo": "naive_sazonal_12m", "real": 9722.313552, "previsto": 7645.920188000001}, {"data": "2025-02-01", "modelo": "naive_sazonal_12m", "real": 14073.526841, "previsto": 14038.333122}, {"data": "2025-03-01", "modelo": "naive_sazonal_12m", "real": 8492.68584, "previsto": 7199.66166}, {"data": "2025-04-01", "modelo": "naive_sazonal_12m", "real": 6933.413439999999, "previsto": 6330.022176}, {"data": "2025-05-01", "modelo": "naive_sazonal_12m", "real": 11109.4945158, "previsto": 9232.230816}, {"data": "2025-06-01", "modelo": "naive_sazonal_12m", "real": 11203.785613, "previsto": 9443.547516}, {"data": "2025-07-01", "modelo": "naive_sazonal_12m", "real": 11190.2652425, "previsto": 8986.132692}, {"data": "2025-08-01", "modelo": "naive_sazonal_12m", "real": 10330.511575, "previsto": 8384.83932}, {"data": "2025-09-01", "modelo": "naive_sazonal_12m", "real": 10566.643395, "previsto": 8001.6394056}, {"data": "2025-10-01", "modelo": "naive_sazonal_12m", "real": 14511.8985, "previsto": 8603.438699999999}, {"data": "2025-11-01", "modelo": "naive_sazonal_12m", "real": 13502.550258, "previsto": 8978.66667}, {"data": "2025-12-01", "modelo": "naive_sazonal_12m", "real": 21819.01104, "previsto": 15118.2972}, {"data": "2025-01-01", "modelo": "media_movel_3m", "real": 9722.313552, "previsto": 10900.13419}, {"data": "2025-02-01", "modelo": "media_movel_3m", "real": 14073.526841, "previsto": 10900.13419}, {"data": "2025-03-01", "modelo": "media_movel_3m", "real": 8492.68584, "previsto": 10900.13419}, {"data": "2025-04-01", "modelo": "media_movel_3m", "real": 6933.413439999999, "previsto": 10900.13419}, {"data": "2025-05-01", "modelo": "media_movel_3m", "real": 11109.4945158, "previsto": 10900.13419}, {"data": "2025-06-01", "modelo": "media_movel_3m", "real": 11203.785613, "previsto": 10900.13419}, {"data": "2025-07-01", "modelo": "media_movel_3m", "real": 11190.2652425, "previsto": 10900.13419}, {"data": "2025-08-01", "modelo": "media_movel_3m", "real": 10330.511575, "previsto": 10900.13419}, {"data": "2025-09-01", "modelo": "media_movel_3m", "real": 10566.643395, "previsto": 10900.13419}, {"data": "2025-10-01", "modelo": "media_movel_3m", "real": 14511.8985, "previsto": 10900.13419}, {"data": "2025-11-01", "modelo": "media_movel_3m", "real": 13502.550258, "previsto": 10900.13419}, {"data": "2025-12-01", "modelo": "media_movel_3m", "real": 21819.01104, "previsto": 10900.13419}, {"data": "2025-01-01", "modelo": "drift_linear", "real": 9722.313552, "previsto": 15322.309214311284}, {"data": "2025-02-01", "modelo": "drift_linear", "real": 14073.526841, "previsto": 15526.32122862257}, {"data": "2025-03-01", "modelo": "drift_linear", "real": 8492.68584, "previsto": 15730.333242933855}, {"data": "2025-04-01", "modelo": "drift_linear", "real": 6933.413439999999, "previsto": 15934.34525724514}, {"data": "2025-05-01", "modelo": "drift_linear", "real": 11109.4945158, "previsto": 16138.357271556424}, {"data": "2025-06-01", "modelo": "drift_linear", "real": 11203.785613, "previsto": 16342.36928586771}, {"data": "2025-07-01", "modelo": "drift_linear", "real": 11190.2652425, "previsto": 16546.381300178993}, {"data": "2025-08-01", "modelo": "drift_linear", "real": 10330.511575, "previsto": 16750.39331449028}, {"data": "2025-09-01", "modelo": "drift_linear", "real": 10566.643395, "previsto": 16954.405328801564}, {"data": "2025-10-01", "modelo": "drift_linear", "real": 14511.8985, "previsto": 17158.41734311285}, {"data": "2025-11-01", "modelo": "drift_linear", "real": 13502.550258, "previsto": 17362.429357424135}, {"data": "2025-12-01", "modelo": "drift_linear", "real": 21819.01104, "previsto": 17566.44137173542}, {"data": "2025-01-01", "modelo": "suav_exp_simples", "real": 9722.313552, "previsto": 9729.968448656526}, {"data": "2025-02-01", "modelo": "suav_exp_simples", "real": 14073.526841, "previsto": 9729.968448656526}, {"data": "2025-03-01", "modelo": "suav_exp_simples", "real": 8492.68584, "previsto": 9729.968448656526}, {"data": "2025-04-01", "modelo": "suav_exp_simples", "real": 6933.413439999999, "previsto": 9729.968448656526}, {"data": "2025-05-01", "modelo": "suav_exp_simples", "real": 11109.4945158, "previsto": 9729.968448656526}, {"data": "2025-06-01", "modelo": "suav_exp_simples", "real": 11203.785613, "previsto": 9729.968448656526}, {"data": "2025-07-01", "modelo": "suav_exp_simples", "real": 11190.2652425, "previsto": 9729.968448656526}, {"data": "2025-08-01", "modelo": "suav_exp_simples", "real": 10330.511575, "previsto": 9729.968448656526}, {"data": "2025-09-01", "modelo": "suav_exp_simples", "real": 10566.643395, "previsto": 9729.968448656526}, {"data": "2025-10-01", "modelo": "suav_exp_simples", "real": 14511.8985, "previsto": 9729.968448656526}, {"data": "2025-11-01", "modelo": "suav_exp_simples", "real": 13502.550258, "previsto": 9729.968448656526}, {"data": "2025-12-01", "modelo": "suav_exp_simples", "real": 21819.01104, "previsto": 9729.968448656526}, {"data": "2025-01-01", "modelo": "holt_tendencia", "real": 9722.313552, "previsto": 10704.456752248536}, {"data": "2025-02-01", "modelo": "holt_tendencia", "real": 14073.526841, "previsto": 11399.311209746138}, {"data": "2025-03-01", "modelo": "holt_tendencia", "real": 8492.68584, "previsto": 12094.165667243738}, {"data": "2025-04-01", "modelo": "holt_tendencia", "real": 6933.413439999999, "previsto": 12789.02012474134}, {"data": "2025-05-01", "modelo": "holt_tendencia", "real": 11109.4945158, "previsto": 13483.874582238945}, {"data": "2025-06-01", "modelo": "holt_tendencia", "real": 11203.785613, "previsto": 14178.729039736543}, {"data": "2025-07-01", "modelo": "holt_tendencia", "real": 11190.2652425, "previsto": 14873.583497234147}, {"data": "2025-08-01", "modelo": "holt_tendencia", "real": 10330.511575, "previsto": 15568.437954731748}, {"data": "2025-09-01", "modelo": "holt_tendencia", "real": 10566.643395, "previsto": 16263.292412229352}, {"data": "2025-10-01", "modelo": "holt_tendencia", "real": 14511.8985, "previsto": 16958.146869726952}, {"data": "2025-11-01", "modelo": "holt_tendencia", "real": 13502.550258, "previsto": 17653.001327224556}, {"data": "2025-12-01", "modelo": "holt_tendencia", "real": 21819.01104, "previsto": 18347.85578472216}], "stock": [{"data": "2025-01-01", "real": 9722.313552, "previsto": 7645.920188000001, "estoque_total_medio": 405.1549125032258, "estoque_seguranca": 3050.1876135573298, "estoque_necessario": 10696.107801557331, "saldo_vs_estoque_medio": -10290.952889054106}, {"data": "2025-02-01", "real": 14073.526841, "previsto": 14038.333122, "estoque_total_medio": 612.7590601545238, "estoque_seguranca": 3050.1876135573298, "estoque_necessario": 17088.52073555733, "saldo_vs_estoque_medio": -16475.761675402806}, {"data": "2025-03-01", "real": 8492.68584, "previsto": 7199.66166, "estoque_total_medio": 367.0733567408602, "estoque_seguranca": 3050.1876135573298, "estoque_necessario": 10249.849273557327, "saldo_vs_estoque_medio": -9882.775916816468}, {"data": "2025-04-01", "real": 6933.413439999999, "previsto": 6330.022176, "estoque_total_medio": 283.15444423822225, "estoque_seguranca": 3050.1876135573298, "estoque_necessario": 9380.20978955733, "saldo_vs_estoque_medio": -9097.055345319108}, {"data": "2025-05-01", "real": 11109.4945158, "previsto": 9232.230816, "estoque_total_medio": 441.262365316129, "estoque_seguranca": 3050.1876135573298, "estoque_necessario": 12282.418429557329, "saldo_vs_estoque_medio": -11841.1560642412}, {"data": "2025-06-01", "real": 11203.785613, "previsto": 9443.547516, "estoque_total_medio": 485.6824930401111, "estoque_seguranca": 3050.1876135573298, "estoque_necessario": 12493.73512955733, "saldo_vs_estoque_medio": -12008.05263651722}, {"data": "2025-07-01", "real": 11190.2652425, "previsto": 8986.132692, "estoque_total_medio": 439.1659031290322, "estoque_seguranca": 3050.1876135573298, "estoque_necessario": 12036.320305557329, "saldo_vs_estoque_medio": -11597.154402428296}, {"data": "2025-08-01", "real": 10330.511575, "previsto": 8384.83932, "estoque_total_medio": 391.7837784774193, "estoque_seguranca": 3050.1876135573298, "estoque_necessario": 11435.026933557328, "saldo_vs_estoque_medio": -11043.243155079908}, {"data": "2025-09-01", "real": 10566.643395, "previsto": 8001.6394056, "estoque_total_medio": 427.44511439, "estoque_seguranca": 3050.1876135573298, "estoque_necessario": 11051.82701915733, "saldo_vs_estoque_medio": -10624.38190476733}, {"data": "2025-10-01", "real": 14511.8985, "previsto": 8603.438699999999, "estoque_total_medio": 581.7067683096774, "estoque_seguranca": 3050.1876135573298, "estoque_necessario": 11653.626313557328, "saldo_vs_estoque_medio": -11071.91954524765}, {"data": "2025-11-01", "real": 13502.550258, "previsto": 8978.66667, "estoque_total_medio": 546.657037996, "estoque_seguranca": 3050.1876135573298, "estoque_necessario": 12028.85428355733, "saldo_vs_estoque_medio": -11482.19724556133}, {"data": "2025-12-01", "real": 21819.01104, "previsto": 15118.2972, "estoque_total_medio": 834.9433624258065, "estoque_seguranca": 3050.1876135573298, "estoque_necessario": 18168.48481355733, "saldo_vs_estoque_medio": -17333.541451131525}]};
+
+    // Funcoes pequenas de formatacao para deixar numeros e datas mais amigaveis.
+    const fmtPct = value => `${(Number(value) * 100).toFixed(1)}%`;
+    const fmtNum = value => Number(value).toLocaleString("pt-BR", { maximumFractionDigits: 0 });
+    const fmtMonth = value => {
+      const date = new Date(`${value}T00:00:00`);
+      const months = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+      return `${months[date.getMonth()]}/${String(date.getFullYear()).slice(-2)}`;
+    };
+
+    function setText(id, value) {
+      document.getElementById(id).textContent = value;
+    }
+
+    // Desenha os eixos dos graficos no canvas.
+    // Foi feito sem biblioteca externa para o painel continuar portavel.
+    function drawAxes(ctx, area, maxY, labels) {
+      ctx.strokeStyle = "#D8DEE8";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(area.left, area.top);
+      ctx.lineTo(area.left, area.bottom);
+      ctx.lineTo(area.right, area.bottom);
+      ctx.stroke();
+
+      ctx.fillStyle = "#637083";
+      ctx.font = "11px Arial";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      for (let i = 0; i <= 4; i += 1) {
+        const y = area.bottom - (area.height * i / 4);
+        const value = maxY * i / 4;
+        ctx.strokeStyle = "#EEF1F5";
+        ctx.beginPath();
+        ctx.moveTo(area.left, y);
+        ctx.lineTo(area.right, y);
+        ctx.stroke();
+        ctx.fillText(fmtNum(value), area.left - 8, y);
+      }
+
+      if (labels.length > 0) {
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        const step = Math.max(1, Math.floor(labels.length / 6));
+        labels.forEach((label, index) => {
+          if (index % step === 0 || index === labels.length - 1) {
+            const x = area.left + (area.width * index / Math.max(labels.length - 1, 1));
+            ctx.fillText(fmtMonth(label), x, area.bottom + 10);
+          }
+        });
+      }
+    }
+
+    function setupCanvas(canvas) {
+      // Ajusta o canvas para telas comuns e telas de alta resolucao.
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.floor(rect.width * dpr);
+      canvas.height = Math.floor(rect.height * dpr);
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx, width: rect.width, height: rect.height };
+    }
+
+    function lineChart(canvasId, series, options) {
+      // Grafico de linha usado para demanda, previsao e estoque.
+      const canvas = document.getElementById(canvasId);
+      const { ctx, width, height } = setupCanvas(canvas);
+      ctx.clearRect(0, 0, width, height);
+      const area = { left: 62, right: width - 20, top: 20, bottom: height - 42 };
+      area.width = area.right - area.left;
+      area.height = area.bottom - area.top;
+      const labels = series[0].points.map(point => point.x);
+      const maxY = Math.max(...series.flatMap(item => item.points.map(point => point.y))) * 1.12;
+      drawAxes(ctx, area, maxY, labels);
+
+      series.forEach(item => {
+        ctx.strokeStyle = item.color;
+        ctx.lineWidth = item.width || 2;
+        ctx.setLineDash(item.dash || []);
+        ctx.beginPath();
+        item.points.forEach((point, index) => {
+          const x = area.left + (area.width * index / Math.max(item.points.length - 1, 1));
+          const y = area.bottom - (point.y / maxY) * area.height;
+          if (index === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+        ctx.setLineDash([]);
+      });
+
+      if (options?.legend) drawLegend(ctx, options.legend, area.left, 4);
+    }
+
+    function drawLegend(ctx, items, x, y) {
+      // Legenda simples desenhada no proprio canvas.
+      ctx.font = "12px Arial";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      let offset = 0;
+      items.forEach(item => {
+        ctx.fillStyle = item.color;
+        ctx.fillRect(x + offset, y + 6, 18, 3);
+        ctx.fillStyle = "#637083";
+        ctx.fillText(item.label, x + offset + 24, y + 8);
+        offset += ctx.measureText(item.label).width + 54;
+      });
+    }
+
+    function barChart(canvasId, rows, options) {
+      // Grafico de barras horizontais usado para comparar WMAPE dos modelos.
+      const canvas = document.getElementById(canvasId);
+      const { ctx, width, height } = setupCanvas(canvas);
+      ctx.clearRect(0, 0, width, height);
+      const area = { left: 142, right: width - 22, top: 24, bottom: height - 24 };
+      area.width = area.right - area.left;
+      area.height = area.bottom - area.top;
+      const maxValue = Math.max(...rows.flatMap(row => row.values)) * 1.18;
+      const rowHeight = area.height / rows.length;
+      ctx.font = "11px Arial";
+      rows.forEach((row, index) => {
+        const y = area.top + index * rowHeight + rowHeight * 0.18;
+        ctx.fillStyle = "#1D2430";
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        ctx.fillText(row.label, area.left - 10, y + rowHeight * 0.32);
+        row.values.forEach((value, seriesIndex) => {
+          const barHeight = Math.min(16, rowHeight * 0.28);
+          const barY = y + seriesIndex * (barHeight + 4);
+          const barWidth = (value / maxValue) * area.width;
+          ctx.fillStyle = options.colors[seriesIndex];
+          ctx.fillRect(area.left, barY, barWidth, barHeight);
+          ctx.fillStyle = "#637083";
+          ctx.textAlign = "left";
+          ctx.fillText(fmtPct(value), area.left + barWidth + 6, barY + barHeight / 2);
+        });
+      });
+      drawLegend(ctx, options.legend, area.left, 2);
+    }
+
+    function stockChart() {
+      // Mostra estoque necessario versus estoque medio observado no teste final.
+      const rows = DATA.stock;
+      lineChart("stockChart", [
+        { color: "#0F766E", points: rows.map(row => ({ x: row.data, y: Number(row.estoque_necessario) })) },
+        { color: "#C2415B", points: rows.map(row => ({ x: row.data, y: Number(row.estoque_total_medio) })), dash: [5, 4] },
+      ], {
+        legend: [
+          { label: "Estoque necessario", color: "#0F766E" },
+          { label: "Estoque medio observado", color: "#C2415B" },
+        ]
+      });
+    }
+
+    function renderForecast(model) {
+      // Atualiza o grafico Real vs Previsto quando a pessoa clica em outro modelo.
+      document.querySelectorAll("#modelButtons button").forEach(button => {
+        button.classList.toggle("active", button.dataset.model === model);
+      });
+      const rows = DATA.testForecasts.filter(row => row.modelo === model);
+      lineChart("forecastChart", [
+        { color: "#1D2430", width: 2.5, points: rows.map(row => ({ x: row.data, y: Number(row.real) })) },
+        { color: "#4F46E5", width: 2.5, points: rows.map(row => ({ x: row.data, y: Number(row.previsto) })) },
+      ], {
+        legend: [
+          { label: "Real", color: "#1D2430" },
+          { label: "Previsto", color: "#4F46E5" },
+        ]
+      });
+    }
+
+    function renderMetricsTable() {
+      // Monta a tabela final de metricas em HTML.
+      const table = document.getElementById("metricsTable");
+      table.innerHTML = `
+        <thead>
+          <tr>
+            <th>Modelo</th>
+            <th>WMAPE</th>
+            <th>MAE</th>
+            <th>RMSE</th>
+            <th>Vies</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${DATA.testMetrics.map((row, index) => `
+            <tr>
+              <td>${index === 0 ? '<span class="pill">melhor teste</span> ' : ''}${row.modelo}</td>
+              <td>${fmtPct(row.WMAPE)}</td>
+              <td>${fmtNum(row.MAE)}</td>
+              <td>${fmtNum(row.RMSE)}</td>
+              <td>${fmtPct(row.BIAS_PCT)}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      `;
+    }
+
+    function init() {
+      // Ponto de entrada do painel: preenche cards, graficos, botoes e tabela.
+      const summary = DATA.summary;
+      setText("periodBadge", `${summary.months} meses | ${fmtMonth(summary.period_start)} a ${fmtMonth(summary.period_end)}`);
+      setText("bestValidation", summary.best_validation_wmape);
+      setText("bestValidationNote", summary.best_validation_model);
+      setText("bestTest", summary.best_test_wmape);
+      setText("bestTestNote", summary.best_test_model);
+      setText("avgDemand", summary.average_monthly_demand);
+      setText("latestStockNeed", summary.latest_stock_need);
+      setText("latestStockGap", `Saldo vs estoque medio: ${summary.latest_stock_gap} t`);
+
+      lineChart("monthlyChart", [
+        { color: "#0F766E", width: 2.5, points: DATA.monthly.map(row => ({ x: row.data, y: Number(row.vol_total) })) },
+        { color: "#B7791F", width: 2, points: DATA.monthly.map(row => ({ x: row.data, y: Number(row.estoque_total_medio) })), dash: [5, 4] },
+      ], {
+        legend: [
+          { label: "Demanda", color: "#0F766E" },
+          { label: "Estoque medio", color: "#B7791F" },
+        ]
+      });
+
+      const metricRows = DATA.validationMetrics.map(row => {
+        const test = DATA.testMetrics.find(item => item.modelo === row.modelo);
+        return { label: row.modelo, values: [Number(row.WMAPE), Number(test?.WMAPE || 0)] };
+      });
+      barChart("wmapeChart", metricRows, {
+        colors: ["#0F766E", "#4F46E5"],
+        legend: [
+          { label: "Validacao", color: "#0F766E" },
+          { label: "Teste", color: "#4F46E5" },
+        ]
+      });
+
+      const models = [...new Set(DATA.testForecasts.map(row => row.modelo))];
+      const buttons = document.getElementById("modelButtons");
+      buttons.innerHTML = models.map(model => `<button type="button" data-model="${model}">${model}</button>`).join("");
+      buttons.querySelectorAll("button").forEach(button => {
+        button.addEventListener("click", () => renderForecast(button.dataset.model));
+      });
+      renderForecast(DATA.summary.best_validation_model);
+      renderMetricsTable();
+      stockChart();
+    }
+
+    window.addEventListener("resize", () => {
+      clearTimeout(window.__resizeTimer);
+      window.__resizeTimer = setTimeout(init, 150);
+    });
+
+    init();
+  </script>
+</body>
+</html>

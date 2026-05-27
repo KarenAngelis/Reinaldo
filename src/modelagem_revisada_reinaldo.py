@@ -32,11 +32,15 @@ import numpy as np
 import pandas as pd
 
 
+# Antes de qualquer conta, o script descobre sozinho onde esta a pasta do projeto.
+# Assim ele funciona mesmo se outra pessoa clonar o repositorio em outro computador.
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 BASE_PATH = PROJECT_ROOT / "data" / "base de dados resumida140526 .xlsx"
 OUTPUT_DIR = PROJECT_ROOT / "outputs"
 
 # Parametros metodologicos explicitos.
+# Deixei esses valores todos juntos para ficar facil explicar na tese e ajustar
+# depois, se o orientador pedir outro recorte de teste ou outro nivel de servico.
 SHEET_NAME = "BD RESUMIDA"
 FREQ = "MS"  # serie mensal, inicio do mes
 TEST_MONTHS = 12  # teste final: ultimos 12 meses
@@ -61,7 +65,9 @@ class ForecastResult:
 
 
 def read_base(path: Path) -> pd.DataFrame:
-    """Read the thesis workbook and normalize columns to stable ASCII names."""
+    """Le a planilha original e troca os nomes das colunas por nomes simples."""
+    # A planilha tem duas linhas de cabecalho visual. Para o Python, isso atrapalha.
+    # Por isso pulamos as duas primeiras linhas e damos nomes padronizados as colunas.
     raw = pd.read_excel(path, sheet_name=SHEET_NAME, header=None)
     df = raw.iloc[2:, 1:].copy()
     df.columns = [
@@ -90,6 +96,8 @@ def read_base(path: Path) -> pd.DataFrame:
             df[col] = pd.to_numeric(df[col], errors="coerce")
     df["data"] = pd.to_datetime(df["data"], errors="coerce")
 
+    # Essas duas checagens param o script cedo se a base estiver estranha.
+    # E melhor falhar aqui do que gerar metricas em cima de datas quebradas.
     if df["data"].isna().any():
         raise ValueError("A coluna de data contem valores invalidos.")
     if df["data"].duplicated().any():
@@ -99,7 +107,9 @@ def read_base(path: Path) -> pd.DataFrame:
 
 
 def monthly_series(df_daily: pd.DataFrame) -> pd.DataFrame:
-    """Aggregate daily volume and stock by month."""
+    """Transforma a base diaria em uma serie mensal."""
+    # A previsao da tese esta em escala mensal. Entao somamos a demanda do mes
+    # e usamos a media mensal do estoque, que representa melhor a posicao media.
     volume_cols = ["vol_f1", "vol_f2", "vol_f3", "vol_f4", "vol_f5"]
     stock_cols = ["est_f1", "est_f2", "est_f3", "est_f4", "est_f5"]
 
@@ -117,6 +127,8 @@ def monthly_series(df_daily: pd.DataFrame) -> pd.DataFrame:
     monthly["estoque_total_medio"] = monthly[stock_cols].sum(axis=1)
 
     # Isto e cobertura observada, nao lead time operacional.
+    # Em palavras simples: mostra por quantos meses o estoque medio "cobriria"
+    # a demanda daquele mes. Nao quer dizer que o fornecedor demora esse tempo.
     monthly["cobertura_observada_meses"] = (
         monthly["estoque_total_medio"] / monthly["vol_total"].replace(0, np.nan)
     )
@@ -124,14 +136,18 @@ def monthly_series(df_daily: pd.DataFrame) -> pd.DataFrame:
 
 
 def mae(y_true: pd.Series, y_pred: pd.Series) -> float:
+    # Erro absoluto medio: em media, quantas toneladas o modelo errou.
     return float(np.mean(np.abs(y_true - y_pred)))
 
 
 def rmse(y_true: pd.Series, y_pred: pd.Series) -> float:
+    # RMSE tambem mede erro, mas pune mais os erros grandes.
     return float(np.sqrt(np.mean((y_true - y_pred) ** 2)))
 
 
 def wmape(y_true: pd.Series, y_pred: pd.Series) -> float:
+    # WMAPE coloca o erro em percentual ponderado pelo volume real.
+    # E uma metrica boa quando queremos comparar modelos em uma serie de demanda.
     denom = float(np.sum(np.abs(y_true)))
     if denom == 0:
         return np.nan
@@ -139,6 +155,8 @@ def wmape(y_true: pd.Series, y_pred: pd.Series) -> float:
 
 
 def bias_pct(y_true: pd.Series, y_pred: pd.Series) -> float:
+    # Vies mostra se o modelo tende a prever acima ou abaixo da demanda real.
+    # Valor positivo = superestima. Valor negativo = subestima.
     denom = float(np.sum(y_true))
     if denom == 0:
         return np.nan
@@ -146,6 +164,8 @@ def bias_pct(y_true: pd.Series, y_pred: pd.Series) -> float:
 
 
 def metric_row(model: str, y_true: pd.Series, y_pred: pd.Series) -> dict[str, float | str]:
+    # Junta real e previsto pelo mesmo periodo antes de calcular as metricas.
+    # Isso evita comparar valores desalinhados por acidente.
     aligned = pd.concat([y_true.rename("real"), y_pred.rename("previsto")], axis=1).dropna()
     return {
         "modelo": model,
@@ -158,10 +178,14 @@ def metric_row(model: str, y_true: pd.Series, y_pred: pd.Series) -> dict[str, fl
 
 
 def forecast_naive(train: pd.Series, periods: int, index: pd.DatetimeIndex) -> ForecastResult:
+    # Modelo mais simples possivel: repete o ultimo mes observado.
+    # Ele serve como linha de base. Um modelo sofisticado precisa ganhar dele.
     return ForecastResult("naive_ultimo_mes", pd.Series(train.iloc[-1], index=index))
 
 
 def forecast_seasonal_naive(train: pd.Series, periods: int, index: pd.DatetimeIndex) -> ForecastResult:
+    # Repete o valor observado no mesmo mes do ano anterior.
+    # Exemplo: para prever dezembro, olha dezembro do ano passado.
     values = []
     history = list(train.astype(float))
     for i in range(periods):
@@ -174,17 +198,23 @@ def forecast_seasonal_naive(train: pd.Series, periods: int, index: pd.DatetimeIn
 
 
 def forecast_moving_average(train: pd.Series, periods: int, index: pd.DatetimeIndex, window: int = 3) -> ForecastResult:
+    # Usa a media dos ultimos meses. Aqui, por padrao, media dos ultimos 3 meses.
+    # E simples, transparente e costuma ser uma referencia honesta para demanda.
     value = float(train.tail(window).mean())
     return ForecastResult(f"media_movel_{window}m", pd.Series(value, index=index))
 
 
 def forecast_drift(train: pd.Series, periods: int, index: pd.DatetimeIndex) -> ForecastResult:
+    # Projeta uma reta simples entre o primeiro e o ultimo ponto da serie.
+    # A ideia e capturar uma tendencia geral, sem usar um modelo complexo.
     slope = (float(train.iloc[-1]) - float(train.iloc[0])) / max(len(train) - 1, 1)
     values = [max(float(train.iloc[-1]) + slope * step, 0.0) for step in range(1, periods + 1)]
     return ForecastResult("drift_linear", pd.Series(values, index=index))
 
 
 def _ses_fit(train: pd.Series, alpha: float) -> tuple[float, float]:
+    # Ajuste interno da suavizacao exponencial simples.
+    # Alpha controla o peso dado aos meses mais recentes.
     level = float(train.iloc[0])
     sse = 0.0
     for obs in train.iloc[1:].astype(float):
@@ -195,6 +225,8 @@ def _ses_fit(train: pd.Series, alpha: float) -> tuple[float, float]:
 
 
 def forecast_ses(train: pd.Series, periods: int, index: pd.DatetimeIndex) -> ForecastResult:
+    # Testa varios valores de alpha e fica com aquele que errou menos no historico.
+    # O nome do modelo fica estavel para facilitar a comparacao entre janelas.
     alphas = np.arange(0.05, 1.00, 0.05)
     best_alpha = min(alphas, key=lambda a: _ses_fit(train, float(a))[1])
     level, _ = _ses_fit(train, float(best_alpha))
@@ -202,6 +234,8 @@ def forecast_ses(train: pd.Series, periods: int, index: pd.DatetimeIndex) -> For
 
 
 def _holt_fit(train: pd.Series, alpha: float, beta: float) -> tuple[float, float, float]:
+    # Ajuste interno do modelo de Holt, que considera nivel e tendencia.
+    # Alpha atualiza o nivel; beta atualiza a inclinacao da tendencia.
     values = train.astype(float).to_numpy()
     level = values[0]
     trend = values[1] - values[0] if len(values) > 1 else 0.0
@@ -216,6 +250,8 @@ def _holt_fit(train: pd.Series, alpha: float, beta: float) -> tuple[float, float
 
 
 def forecast_holt(train: pd.Series, periods: int, index: pd.DatetimeIndex) -> ForecastResult:
+    # Procura uma combinacao simples de alpha e beta por grade.
+    # Nao chamamos isso de otimizacao no texto da tese; e uma calibracao simples.
     grid = np.arange(0.05, 1.00, 0.10)
     best = None
     for alpha in grid:
@@ -240,6 +276,11 @@ FORECASTERS: list[Callable[[pd.Series, int, pd.DatetimeIndex], ForecastResult]] 
 
 
 def rolling_validation(series: pd.Series) -> tuple[pd.DataFrame, pd.DataFrame]:
+    # Validacao temporal com janela expansiva:
+    # 1. treina com os meses disponiveis ate certo ponto;
+    # 2. preve o proximo mes;
+    # 3. anda uma casa para frente e repete.
+    # Isso respeita a ordem do tempo e evita "olhar o futuro".
     forecasts = []
     for origin in range(MIN_TRAIN_MONTHS, len(series) - TEST_MONTHS - HORIZON_MONTHS + 1):
         train = series.iloc[:origin]
@@ -257,6 +298,7 @@ def rolling_validation(series: pd.Series) -> tuple[pd.DataFrame, pd.DataFrame]:
                 }
             )
     validation = pd.DataFrame(forecasts)
+    # Depois que todas as previsoes foram feitas, resumimos o desempenho por modelo.
     metrics = (
         validation.groupby("modelo", group_keys=False)
         .apply(lambda g: pd.Series(metric_row(g.name, g["real"], g["previsto"])), include_groups=False)
@@ -267,6 +309,8 @@ def rolling_validation(series: pd.Series) -> tuple[pd.DataFrame, pd.DataFrame]:
 
 
 def final_holdout(series: pd.Series) -> tuple[pd.DataFrame, pd.DataFrame]:
+    # Teste final: separa os ultimos 12 meses e finge que eles ainda nao existem.
+    # Os modelos treinam no periodo anterior e tentam prever esse bloco final.
     train = series.iloc[:-TEST_MONTHS]
     test = series.iloc[-TEST_MONTHS:]
     rows = []
@@ -275,6 +319,8 @@ def final_holdout(series: pd.Series) -> tuple[pd.DataFrame, pd.DataFrame]:
         for date, real, pred in zip(test.index, test, result.forecast):
             rows.append({"data": date, "modelo": result.model, "real": float(real), "previsto": float(pred)})
     forecasts = pd.DataFrame(rows)
+    # As metricas do teste final ajudam a ver se o modelo escolhido na validacao
+    # continua se comportando bem em dados que ficaram totalmente fora da escolha.
     metrics = (
         forecasts.groupby("modelo", group_keys=False)
         .apply(lambda g: pd.Series(metric_row(g.name, g["real"], g["previsto"])), include_groups=False)
@@ -290,10 +336,15 @@ def stock_dimensioning(
     final_forecasts: pd.DataFrame,
     selected_model: str,
 ) -> pd.DataFrame:
+    # Aqui conectamos a previsao ao estoque.
+    # A logica e: demanda prevista no lead time + uma gordura de seguranca
+    # baseada no erro historico do modelo durante a validacao.
     z = Z_BY_SERVICE_LEVEL[SERVICE_LEVEL]
     residuals = validation.loc[validation["modelo"] == selected_model].copy()
     sigma_error = float((residuals["real"] - residuals["previsto"]).std(ddof=1))
 
+    # Usamos apenas o modelo selecionado na validacao interna.
+    # Isso evita escolher o modelo olhando o teste final, o que seria injusto.
     selected = final_forecasts.loc[final_forecasts["modelo"] == selected_model].copy()
     selected["nivel_servico"] = SERVICE_LEVEL
     selected["z"] = z
@@ -302,6 +353,7 @@ def stock_dimensioning(
     selected["demanda_no_lead_time"] = selected["previsto"] * DEFAULT_LEAD_TIME_MONTHS
     selected["estoque_seguranca"] = z * sigma_error * np.sqrt(DEFAULT_LEAD_TIME_MONTHS)
     selected["estoque_necessario"] = selected["demanda_no_lead_time"] + selected["estoque_seguranca"]
+    # Trazemos o estoque medio observado para comparar com o estoque necessario.
     selected = selected.merge(
         monthly[["estoque_total_medio", "cobertura_observada_meses"]].reset_index().rename(columns={"data": "data"}),
         on="data",
@@ -318,6 +370,9 @@ def write_summary(
     test_metrics: pd.DataFrame,
     selected_model: str,
 ) -> str:
+    # Este texto e o resumo que aparece no terminal e tambem fica salvo em arquivo.
+    # A ideia e deixar rastro metodologico: o que foi usado, como foi validado
+    # e qual cuidado de linguagem deve entrar na tese.
     date_min = df_daily["data"].min().date()
     date_max = df_daily["data"].max().date()
     zero_days = int((df_daily["vol_total"] == 0).sum())
@@ -365,6 +420,8 @@ Dimensionamento de estoque:
 
 
 def main() -> None:
+    # Esta e a ordem principal da rotina:
+    # carregar dados -> agregar por mes -> validar modelos -> testar -> dimensionar estoque -> salvar saidas.
     OUTPUT_DIR.mkdir(exist_ok=True)
 
     df_daily = read_base(BASE_PATH)
@@ -377,6 +434,7 @@ def main() -> None:
     selected_model = str(validation_metrics.iloc[0]["modelo"])
     stock = stock_dimensioning(monthly, validation, final_forecasts, selected_model)
 
+    # Cada saida fica em CSV para facilitar auditoria, abertura no Excel e uso no painel HTML.
     monthly.to_csv(OUTPUT_DIR / "dados_mensais_limpos.csv", index_label="data", encoding="utf-8-sig")
     validation.to_csv(OUTPUT_DIR / "previsoes_validacao_interna.csv", index=False, encoding="utf-8-sig")
     validation_metrics.to_csv(OUTPUT_DIR / "metricas_validacao_interna.csv", index=False, encoding="utf-8-sig")
