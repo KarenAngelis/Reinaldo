@@ -1,0 +1,51 @@
+Resumo metodologico da modelagem revisada
+
+Base:
+- Periodo diario: 2021-01-01 a 2025-12-31
+- Observacoes diarias: 1826
+- Dias com demanda zero: 567
+- Agregacao usada na modelagem principal: mensal
+- Observacoes mensais: 60
+
+Desenho experimental:
+- Teste final: ultimos 12 meses
+- Validacao interna: janela expansiva com minimo de 36 meses
+- Horizonte avaliado: 1 mes(es) a frente
+- Variavel alvo: volume expedido total em toneladas
+- Variaveis exogenas: nao usadas nesta versao, pois nao ha justificativa estatistica suficiente no script original.
+
+Modelos comparados:
+- naive ultimo mes
+- naive sazonal de 12 meses
+- media movel de 3 meses
+- drift linear
+- suavizacao exponencial simples
+- Holt com tendencia
+
+Modelo selecionado por menor WMAPE na validacao interna:
+- naive_sazonal_12m
+
+Melhores metricas de validacao interna:
+           modelo  n_obs         MAE        RMSE    WMAPE  BIAS_PCT
+naive_sazonal_12m     12 1252.738183 1781.293745 0.134267 -0.021561
+ suav_exp_simples     12 1769.747317 2667.683784 0.189679 -0.035260
+   holt_tendencia     12 2010.718809 2963.231975 0.215506 -0.036243
+   media_movel_3m     12 2134.586401 2912.434908 0.228782 -0.033181
+ naive_ultimo_mes     12 2484.020035 3559.663093 0.266234 -0.030697
+     drift_linear     12 2510.894470 3595.302846 0.269114 -0.021184
+
+Metricas no teste final:
+           modelo  n_obs         MAE        RMSE    WMAPE  BIAS_PCT
+   media_movel_3m     12 2463.724652 3793.454274 0.206089 -0.088212
+naive_sazonal_12m     12 2624.447529 3271.967679 0.219533 -0.219533
+ suav_exp_simples     12 2898.288621 4269.374452 0.242440 -0.186095
+   holt_tendencia     12 3595.709765 3857.639610 0.300779  0.215103
+ naive_ultimo_mes     12 4280.407856 4825.634110 0.358053  0.264635
+     drift_linear     12 5198.461920 5547.212663 0.434848  0.375560
+
+Dimensionamento de estoque:
+- O calculo usa previsao de demanda + estoque de seguranca por nivel de servico.
+- Nivel de servico assumido: 95.0%
+- Lead time assumido: 1.00 mes(es)
+- A coluna cobertura_observada_meses e uma cobertura estoque/demanda, nao um lead time operacional.
+- O termo recomendado no texto e "dimensionamento" ou "calibracao de parametro", nao "otimizacao", salvo se uma funcao objetivo e restricoes forem formalmente propostas.
