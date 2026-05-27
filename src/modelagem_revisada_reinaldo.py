@@ -11,15 +11,15 @@ revisao da tese:
 - evitar chamar calibracao simples de "otimizacao".
 
 Entrada:
-    base de dados resumida140526 .xlsx
+    data/base de dados resumida140526 .xlsx
 
 Saidas:
-    modelagem_revisada_outputs/dados_mensais_limpos.csv
-    modelagem_revisada_outputs/metricas_validacao_interna.csv
-    modelagem_revisada_outputs/metricas_teste_final.csv
-    modelagem_revisada_outputs/previsoes_teste_final.csv
-    modelagem_revisada_outputs/dimensionamento_estoque.csv
-    modelagem_revisada_outputs/resumo_metodologico.txt
+    outputs/dados_mensais_limpos.csv
+    outputs/metricas_validacao_interna.csv
+    outputs/metricas_teste_final.csv
+    outputs/previsoes_teste_final.csv
+    outputs/dimensionamento_estoque.csv
+    outputs/resumo_metodologico.txt
 """
 
 from __future__ import annotations
@@ -32,8 +32,9 @@ import numpy as np
 import pandas as pd
 
 
-BASE_PATH = Path(r"C:/Users/karen_fy4jmbm/Desktop/Reinaldo/base de dados resumida140526 .xlsx")
-OUTPUT_DIR = BASE_PATH.parent / "modelagem_revisada_outputs"
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+BASE_PATH = PROJECT_ROOT / "data" / "base de dados resumida140526 .xlsx"
+OUTPUT_DIR = PROJECT_ROOT / "outputs"
 
 # Parametros metodologicos explicitos.
 SHEET_NAME = "BD RESUMIDA"
@@ -223,7 +224,7 @@ def forecast_holt(train: pd.Series, periods: int, index: pd.DatetimeIndex) -> Fo
             if best is None or sse < best[2]:
                 best = (float(alpha), float(beta), sse, level, trend)
     assert best is not None
-    alpha, beta, _, level, trend = best
+    _, _, _, level, trend = best
     values = [max(level + step * trend, 0.0) for step in range(1, periods + 1)]
     return ForecastResult("holt_tendencia", pd.Series(values, index=index))
 
