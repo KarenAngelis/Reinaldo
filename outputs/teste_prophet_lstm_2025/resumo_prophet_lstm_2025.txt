@@ -1,0 +1,36 @@
+Teste exploratorio Prophet/LSTM - 2025
+
+Objetivo:
+- Comparar Prophet e LSTM, apenas de forma exploratoria, com o melhor modelo simples ja testado.
+
+Desenho temporal:
+- Treino: 2021-01-01 a 2024-12-01
+- Teste: 2025-01-01 a 2025-12-01
+- Frequencia: mensal
+- Variavel alvo: volume expedido total em toneladas
+- Horizonte: 1 mes(es) a frente
+
+Benchmark simples:
+- Modelo: media_movel_3m
+- WMAPE: 20.61%
+
+Controle de reprodutibilidade do LSTM:
+- Semente fixa usada: 42
+- O script fixa random, numpy e tensorflow quando TensorFlow esta instalado.
+- O script tenta ativar operacoes deterministicas do TensorFlow, define TF_ENABLE_ONEDNN_OPTS=0 e desativa embaralhamento no treino da LSTM.
+
+Status de execucao:
+- Prophet executado com sucesso.
+- LSTM executado com sucesso. Ambiente: Python 3.12.10, TensorFlow 2.21.0. Reprodutibilidade: seed=42; sementes random/numpy/tensorflow fixadas; TF_ENABLE_ONEDNN_OPTS=0; operacoes deterministicas do TensorFlow ativadas; threads do TensorFlow limitadas a 1.
+
+Metricas calculadas:
+      modelo  n_obs         MAE        RMSE    WMAPE  BIAS_PCT                                                                                                                                                                                                                                                         status  superou_media_movel_3m
+     prophet     12 2223.227027 3128.467199 0.185971 -0.164894                                                                                                                                                                                                                                 Prophet executado com sucesso.                    True
+lstm_simples     12 2626.021201 3817.355272 0.219665 -0.219665 LSTM executado com sucesso. Ambiente: Python 3.12.10, TensorFlow 2.21.0. Reprodutibilidade: seed=42; sementes random/numpy/tensorflow fixadas; TF_ENABLE_ONEDNN_OPTS=0; operacoes deterministicas do TensorFlow ativadas; threads do TensorFlow limitadas a 1.                   False
+
+Comparacao com o benchmark:
+- prophet: WMAPE 18.60%; superou o benchmark media_movel_3m (20.61%).
+- lstm_simples: WMAPE 21.97%; nao superou o benchmark media_movel_3m (20.61%).
+
+Observacao metodologica:
+- Estes testes nao substituem a modelagem principal. Prophet e LSTM permanecem como comparacao exploratoria, especialmente porque a serie mensal tem apenas 48 meses de treino neste recorte.

@@ -1,0 +1,3 @@
+﻿modelo,n_obs,MAE,RMSE,WMAPE,BIAS_PCT,status,superou_media_movel_3m
+prophet,12,2223.2270267796357,3128.4671986681446,0.1859713484213111,-0.16489390506769117,Prophet executado com sucesso.,True
+lstm_simples,12,2626.0212014438907,3817.3552723490466,0.21966479263382854,-0.21966479263382854,"LSTM executado com sucesso. Ambiente: Python 3.12.10, TensorFlow 2.21.0. Reprodutibilidade: seed=42; sementes random/numpy/tensorflow fixadas; TF_ENABLE_ONEDNN_OPTS=0; operacoes deterministicas do TensorFlow ativadas; threads do TensorFlow limitadas a 1.",False

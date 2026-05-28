@@ -1,0 +1,39 @@
+Teste complementar: ano de 2025 como teste final fora da amostra
+
+Periodo de treino inicial:
+- 2021-01-01 a 2024-12-01
+- Meses no treino inicial: 48
+
+Periodo de teste:
+- 2025-01-01 a 2025-12-01
+- Meses no teste: 12
+
+Desenho do teste:
+- Base diaria lida de: C:\Users\karen_fy4jmbm\Desktop\Reinaldo\data\base de dados resumida140526 .xlsx
+- Agregacao usada: mensal
+- Variavel alvo: volume expedido total em toneladas
+- Horizonte de previsao: 1 mes(es) a frente
+- O teste usa 2021-2024 como historico fixo de treino e reserva todo o ano de 2025 como teste fora da amostra.
+
+Modelos comparados:
+- naive ultimo mes
+- naive sazonal de 12 meses
+- media movel de 3 meses
+- drift linear
+- suavizacao exponencial simples
+- Holt com tendencia
+
+Melhor modelo por WMAPE no teste complementar de 2025:
+- media_movel_3m
+- WMAPE: 20.61%
+
+Metricas por modelo:
+           modelo  n_obs         MAE        RMSE    WMAPE  BIAS_PCT
+   media_movel_3m     12 2463.724652 3793.454274 0.206089 -0.088212
+naive_sazonal_12m     12 2624.447529 3271.967679 0.219533 -0.219533
+ suav_exp_simples     12 2898.288621 4269.374452 0.242440 -0.186095
+   holt_tendencia     12 3595.709765 3857.639610 0.300779  0.215103
+ naive_ultimo_mes     12 4280.407856 4825.634110 0.358053  0.264635
+     drift_linear     12 5198.461920 5547.212663 0.434848  0.375560
+
+- Comparacao com o teste oficial: o melhor WMAPE oficial foi 20.61% (media_movel_3m); no teste complementar de 2025 foi 20.61%, indicando resultado muito proximo do teste oficial.
